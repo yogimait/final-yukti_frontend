@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # 1. Database (MongoDB)
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # 2. Cache (Redis) - Essential for Real-Time features
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  # 3. Code Execution Engine (Judge0)
+
+  server:
+    image: judge0/judge0:latest
+    ports:
+      - "2358:2358"
+    environment:
+      - JUDGE0_Auth_Token=mysecrettoken
+    privileged: true
+
+volumes:
+  mongo_data:
