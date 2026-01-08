@@ -1,4 +1,4 @@
-version: '3.0' # Version downgrade kar diya taaki validation fail na ho
+version: '3.0' 
 
 services:
   # 1. MongoDB
@@ -52,7 +52,7 @@ services:
   # 5. Worker (FORCE FIX)
   worker:
     image: judge0/judge0:1.13.0
-    # 👇 MAGIC LINE: Pehle folder banao, permission do, fir worker start karo
+    
     command: ["/bin/bash", "-c", "mkdir -p /box && chmod 777 /box && ./scripts/workers"]
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
