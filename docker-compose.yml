@@ -1,7 +1,7 @@
-version: '3.8'
+version: '3.0' 
 
 services:
-  # 1. Database (MongoDB)
+  # 1. MongoDB
   mongo:
     image: mongo:latest
     ports:
@@ -9,21 +9,67 @@ services:
     volumes:
       - mongo_data:/data/db
 
-  # 2. Cache (Redis) - Essential for Real-Time features
+  # 2. Redis
   redis:
-    image: redis:alpine
+    image: redis:6.0
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
 
-  # 3. Code Execution Engine (Judge0)
+  # 3. Postgres
+  db:
+    image: postgres:13.0
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0
+      - POSTGRES_DB=judge0
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
+  # 4. Server
   server:
-    image: judge0/judge0:latest
+    image: judge0/judge0:1.13.0
+    command: ["./scripts/server"]
     ports:
       - "2358:2358"
     environment:
-      - JUDGE0_Auth_Token=mysecrettoken
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0
+      - POSTGRES_DB=judge0
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - JUDGE0_AUTH_TOKEN=mysecrettoken
+    depends_on:
+      - redis
+      - db
+
+  # 5. Worker (FORCE FIX)
+  worker:
+    image: judge0/judge0:1.13.0
+    
+    command: ["/bin/bash", "-c", "mkdir -p /box && chmod 777 /box && ./scripts/workers"]
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
     privileged: true
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0
+      - POSTGRES_DB=judge0
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+    depends_on:
+      - redis
+      - db
 
 volumes:
   mongo_data:
+  postgres_data:
+  redis_data:
