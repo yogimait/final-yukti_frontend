@@ -8,7 +8,7 @@ const initialState: AuthState = {
     user: null,
     token: token,
     isAuthenticated: !!token,  // If token exists, consider authenticated initially
-    isLoading: !!token,        // Show loading if we need to fetch user
+    isLoading: false,          // Don't show loading for frontend testing
     error: null,
 };
 
