@@ -1,5 +1,6 @@
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
-import { Whiteboard } from '@/components/battle/Whiteboard';
+import { useState, memo } from 'react';
+import { ChevronLeft, ChevronRight, FileText, Code, ListChecks } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Mock problem data
 const mockProblem = {
@@ -36,78 +37,177 @@ const difficultyColors = {
     hard: 'text-red-500 bg-red-500/10',
 };
 
-export function ProblemPanel() {
+type TabValue = 'description' | 'examples' | 'constraints';
+
+interface ProblemPanelProps {
+    className?: string;
+}
+
+/**
+ * ProblemPanel - Left collapsible panel
+ * 
+ * Features:
+ * - Default width: 22-25%
+ * - Scrollable content
+ * - Tabs: Description, Examples, Constraints (no Whiteboard)
+ * - Collapsed state: Icon-only vertical strip
+ * - Animation: Slide in/out (transform X, 200ms)
+ * - No markdown fade-ins
+ */
+function ProblemPanelComponent({ className }: ProblemPanelProps) {
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [activeTab, setActiveTab] = useState<TabValue>('description');
+
+    const tabs: { value: TabValue; label: string; icon: React.ReactNode }[] = [
+        { value: 'description', label: 'Description', icon: <FileText className="h-4 w-4" /> },
+        { value: 'examples', label: 'Examples', icon: <Code className="h-4 w-4" /> },
+        { value: 'constraints', label: 'Constraints', icon: <ListChecks className="h-4 w-4" /> },
+    ];
+
     return (
-        <div className="flex h-full flex-col overflow-hidden">
-            {/* Problem Header */}
-            <div className="border-b p-4">
-                <div className="flex items-center gap-3">
-                    <h2 className="text-xl font-bold">{mockProblem.title}</h2>
-                    <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${difficultyColors[mockProblem.difficulty]
-                            }`}
+        <div
+            className={cn(
+                'panel-slide flex flex-col h-full bg-card border-r border-border',
+                isCollapsed ? 'w-12' : 'w-full',
+                className
+            )}
+        >
+            {/* Collapsed State - Icon strip */}
+            {isCollapsed ? (
+                <div className="flex flex-col items-center py-3 gap-3">
+                    <button
+                        onClick={() => setIsCollapsed(false)}
+                        className="p-2 rounded-md hover:bg-secondary transition-colors"
+                        aria-label="Expand problem panel"
                     >
-                        {mockProblem.difficulty}
-                    </span>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+
+                    <div className="h-px w-6 bg-border" />
+
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.value}
+                            onClick={() => {
+                                setActiveTab(tab.value);
+                                setIsCollapsed(false);
+                            }}
+                            className={cn(
+                                'p-2 rounded-md transition-colors',
+                                activeTab === tab.value
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'text-muted-foreground hover:bg-secondary'
+                            )}
+                            aria-label={tab.label}
+                            title={tab.label}
+                        >
+                            {tab.icon}
+                        </button>
+                    ))}
                 </div>
-            </div>
-
-            {/* Tabs */}
-            <Tabs defaultValue="description" className="flex flex-1 flex-col overflow-hidden">
-                <TabsList className="mx-4 mt-2">
-                    <TabsTrigger value="description">Description</TabsTrigger>
-                    <TabsTrigger value="examples">Examples</TabsTrigger>
-                    <TabsTrigger value="constraints">Constraints</TabsTrigger>
-                    <TabsTrigger value="whiteboard">Whiteboard</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="description" className="flex-1 overflow-auto p-4">
-                    <div className="prose prose-sm prose-invert max-w-none">
-                        <p className="whitespace-pre-wrap text-foreground">{mockProblem.description}</p>
+            ) : (
+                <>
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-3 border-b border-border flex-shrink-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <h2 className="text-sm font-semibold text-foreground truncate">
+                                {mockProblem.title}
+                            </h2>
+                            <span
+                                className={cn(
+                                    'rounded-full px-2 py-0.5 text-[10px] font-medium capitalize flex-shrink-0',
+                                    difficultyColors[mockProblem.difficulty]
+                                )}
+                            >
+                                {mockProblem.difficulty}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setIsCollapsed(true)}
+                            className="p-1.5 rounded-md hover:bg-secondary transition-colors flex-shrink-0"
+                            aria-label="Collapse problem panel"
+                        >
+                            <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                        </button>
                     </div>
-                </TabsContent>
 
-                <TabsContent value="examples" className="flex-1 overflow-auto p-4">
-                    <div className="space-y-4">
-                        {mockProblem.examples.map((example, index) => (
-                            <div key={index} className="rounded-lg border p-4">
-                                <h4 className="mb-2 font-medium">Example {index + 1}</h4>
-                                <div className="space-y-2 font-mono text-sm">
-                                    <div>
-                                        <span className="text-muted-foreground">Input: </span>
-                                        <code className="rounded bg-muted px-1">{example.input}</code>
-                                    </div>
-                                    <div>
-                                        <span className="text-muted-foreground">Output: </span>
-                                        <code className="rounded bg-muted px-1">{example.output}</code>
-                                    </div>
-                                    {example.explanation && (
-                                        <div className="text-muted-foreground">
-                                            <span>Explanation: </span>
-                                            {example.explanation}
-                                        </div>
-                                    )}
-                                </div>
+                    {/* Tab List */}
+                    <div className="flex border-b border-border flex-shrink-0">
+                        {tabs.map((tab) => (
+                            <button
+                                key={tab.value}
+                                onClick={() => setActiveTab(tab.value)}
+                                className={cn(
+                                    'flex-1 py-2 text-xs font-medium transition-colors',
+                                    activeTab === tab.value
+                                        ? 'text-primary border-b-2 border-primary'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="flex-1 overflow-y-auto p-4">
+                        {activeTab === 'description' && (
+                            <div className="prose prose-sm prose-invert max-w-none">
+                                <p className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
+                                    {mockProblem.description}
+                                </p>
                             </div>
-                        ))}
+                        )}
+
+                        {activeTab === 'examples' && (
+                            <div className="space-y-4">
+                                {mockProblem.examples.map((example, index) => (
+                                    <div key={index} className="rounded-lg border border-border p-3">
+                                        <h4 className="text-xs font-medium text-muted-foreground mb-2">
+                                            Example {index + 1}
+                                        </h4>
+                                        <div className="space-y-1.5 font-mono text-xs">
+                                            <div>
+                                                <span className="text-muted-foreground">Input: </span>
+                                                <code className="rounded bg-background px-1 py-0.5 text-foreground">
+                                                    {example.input}
+                                                </code>
+                                            </div>
+                                            <div>
+                                                <span className="text-muted-foreground">Output: </span>
+                                                <code className="rounded bg-background px-1 py-0.5 text-green-500">
+                                                    {example.output}
+                                                </code>
+                                            </div>
+                                            {example.explanation && (
+                                                <p className="text-muted-foreground text-[11px] mt-2">
+                                                    {example.explanation}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {activeTab === 'constraints' && (
+                            <ul className="space-y-2">
+                                {mockProblem.constraints.map((constraint, index) => (
+                                    <li key={index} className="flex items-start gap-2 font-mono text-xs">
+                                        <span className="text-primary mt-0.5">•</span>
+                                        <span className="text-foreground">{constraint}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
-                </TabsContent>
-
-                <TabsContent value="constraints" className="flex-1 overflow-auto p-4">
-                    <ul className="space-y-2">
-                        {mockProblem.constraints.map((constraint, index) => (
-                            <li key={index} className="flex items-center gap-2 font-mono text-sm">
-                                <span className="text-primary">•</span>
-                                {constraint}
-                            </li>
-                        ))}
-                    </ul>
-                </TabsContent>
-
-                <TabsContent value="whiteboard" className="flex-1 overflow-hidden p-4">
-                    <Whiteboard className="h-full" />
-                </TabsContent>
-            </Tabs>
+                </>
+            )}
         </div>
     );
 }
+
+/**
+ * Memoized ProblemPanel to prevent unnecessary re-renders
+ */
+export const ProblemPanel = memo(ProblemPanelComponent);

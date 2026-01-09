@@ -1,110 +1,134 @@
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { memo, useState, useEffect } from 'react';
+import { Check, Loader2 } from 'lucide-react';
 import type { User } from '@/types/user';
+import { cn } from '@/lib/utils';
+
+type OpponentStatus = 'idle' | 'typing' | 'running' | 'submitted';
 
 interface OpponentPanelProps {
     opponent: User;
+    status?: OpponentStatus;
+    className?: string;
 }
 
-// Mock opponent progress
-const mockProgress = {
-    testsPassed: 2,
-    totalTests: 5,
-    submissionCount: 1,
-    lastSubmissionTime: '2 min ago',
-    status: 'coding' as const, // 'coding' | 'submitted' | 'idle'
-};
+/**
+ * OpponentPanel - Minimal awareness panel
+ * 
+ * Content:
+ * - Avatar + Name + ELO
+ * - Status: Typing..., Running tests..., Submitted
+ * 
+ * Visual Language:
+ * | State     | Effect                     |
+ * | --------- | -------------------------- |
+ * | Typing    | Static text                |
+ * | Running   | Single spinner             |
+ * | Submitted | Green check (one-time pop) |
+ * 
+ * No live progress bars
+ * No typing animation for opponent
+ */
+function OpponentPanelComponent({
+    opponent,
+    status = 'idle',
+    className,
+}: OpponentPanelProps) {
+    const [showCheckPop, setShowCheckPop] = useState(false);
 
-export function OpponentPanel({ opponent }: OpponentPanelProps) {
-    const [showProgress, setShowProgress] = useState(true);
+    // One-time pop animation for submitted state
+    useEffect(() => {
+        if (status === 'submitted') {
+            setShowCheckPop(true);
+        }
+    }, [status]);
 
     return (
-        <div className="flex flex-col p-4">
+        <div
+            className={cn(
+                'flex flex-col p-3 bg-card border-l border-border h-full',
+                className
+            )}
+        >
             {/* Opponent Info */}
-            <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-orange-500 text-lg font-bold text-white">
-                        {opponent.username.charAt(0)}
-                    </div>
-                    <div>
-                        <h3 className="font-semibold">{opponent.username}</h3>
-                        <p className="text-sm text-muted-foreground">{opponent.elo} ELO</p>
-                    </div>
+            <div className="flex items-center gap-3 mb-4">
+                {/* Avatar */}
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20 flex-shrink-0">
+                    {opponent.avatar ? (
+                        <img
+                            src={opponent.avatar}
+                            alt={opponent.username}
+                            className="h-full w-full rounded-lg object-cover"
+                        />
+                    ) : (
+                        <span className="text-base font-bold text-foreground">
+                            {opponent.username.charAt(0).toUpperCase()}
+                        </span>
+                    )}
                 </div>
-                <button
-                    onClick={() => setShowProgress(!showProgress)}
-                    className="text-muted-foreground hover:text-foreground"
-                >
-                    {showProgress ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
-                </button>
+
+                {/* Name & ELO */}
+                <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-foreground truncate">
+                        {opponent.username}
+                    </h3>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                        {opponent.elo} ELO
+                    </p>
+                </div>
             </div>
 
-            {showProgress && (
-                <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="space-y-4"
-                >
-                    {/* Status */}
-                    <Card>
-                        <CardContent className="flex items-center gap-3 p-4">
-                            <div
-                                className={`h-3 w-3 rounded-full ${mockProgress.status === 'coding'
-                                        ? 'animate-pulse bg-green-500'
-                                        : mockProgress.status === 'submitted'
-                                            ? 'bg-blue-500'
-                                            : 'bg-gray-500'
-                                    }`}
-                            />
-                            <span className="text-sm capitalize">{mockProgress.status}</span>
-                        </CardContent>
-                    </Card>
+            {/* Status */}
+            <div className="mt-auto">
+                <div className="rounded-lg border border-border bg-background p-3">
+                    <div className="flex items-center gap-2">
+                        {status === 'idle' && (
+                            <>
+                                <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">Idle</span>
+                            </>
+                        )}
 
-                    {/* Test Progress */}
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Test Progress</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center gap-2">
-                                {Array.from({ length: mockProgress.totalTests }).map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${i < mockProgress.testsPassed
-                                                ? 'bg-green-500/20 text-green-500'
-                                                : 'bg-muted text-muted-foreground'
-                                            }`}
-                                    >
-                                        {i < mockProgress.testsPassed ? (
-                                            <CheckCircle className="h-4 w-4" />
-                                        ) : (
-                                            <XCircle className="h-4 w-4" />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                {mockProgress.testsPassed}/{mockProgress.totalTests} tests passed
-                            </p>
-                        </CardContent>
-                    </Card>
+                        {status === 'typing' && (
+                            <>
+                                <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                <span className="text-xs text-foreground">Typing...</span>
+                            </>
+                        )}
 
-                    {/* Submissions */}
-                    <Card>
-                        <CardContent className="flex items-center justify-between p-4">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                Last submission: {mockProgress.lastSubmissionTime}
-                            </div>
-                            <span className="text-sm font-medium">
-                                {mockProgress.submissionCount} submissions
-                            </span>
-                        </CardContent>
-                    </Card>
-                </motion.div>
-            )}
+                        {status === 'running' && (
+                            <>
+                                <Loader2 className="h-3 w-3 text-yellow-500 animate-simple-spin" />
+                                <span className="text-xs text-foreground">Running tests...</span>
+                            </>
+                        )}
+
+                        {status === 'submitted' && (
+                            <>
+                                <div
+                                    className={cn(
+                                        'flex h-4 w-4 items-center justify-center rounded-full bg-green-500',
+                                        showCheckPop && 'animate-check-pop'
+                                    )}
+                                >
+                                    <Check className="h-2.5 w-2.5 text-white" />
+                                </div>
+                                <span className="text-xs text-green-500 font-medium">Submitted</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
+
+/**
+ * Memoized OpponentPanel to prevent unnecessary re-renders
+ */
+export const OpponentPanel = memo(OpponentPanelComponent, (prevProps, nextProps) => {
+    return (
+        prevProps.opponent.id === nextProps.opponent.id &&
+        prevProps.opponent.elo === nextProps.opponent.elo &&
+        prevProps.status === nextProps.status
+    );
+});

@@ -46,8 +46,8 @@ export function Leaderboard() {
                 >
                     {/* Header */}
                     <div className="mb-6 text-center">
-                        <h1 className="mb-1 text-3xl font-bold text-foreground">Leaderboard</h1>
-                        <p className="text-sm text-muted-foreground">Global rankings</p>
+                        <h1 className="mb-1 text-5xl font-space font-bold text-foreground">Leaderboard</h1>
+                        <p className="text-sm font-space text-muted-foreground">Global rankings</p>
                     </div>
 
                     {/* Top 3 Podium with Spotlight */}
@@ -63,10 +63,10 @@ export function Leaderboard() {
                         >
                             {/* 2nd */}
                             <div className="flex flex-col items-center">
-                                <span className="mb-1 text-xs text-muted-foreground">2nd</span>
+                                <span className="mb-1 text-xs font-space text-muted-foreground">2nd</span>
                                 <div className="flex h-16 w-20 flex-col items-center justify-center rounded-t-md bg-secondary border border-border">
-                                    <span className="text-xs font-semibold text-foreground truncate w-full text-center px-1">{mockLeaderboard[1].username}</span>
-                                    <span className="text-lg font-bold tabular-nums text-foreground">{mockLeaderboard[1].elo}</span>
+                                    <span className="text-xs font-semibold font-space text-foreground truncate w-full text-center px-1">{mockLeaderboard[1].username}</span>
+                                    <span className="text-lg font-bold font-space tabular-nums text-foreground">{mockLeaderboard[1].elo}</span>
                                 </div>
                             </div>
 
@@ -74,17 +74,17 @@ export function Leaderboard() {
                             <div className="flex flex-col items-center">
                                 <Trophy className="mb-1 h-5 w-5 text-primary" />
                                 <div className="flex h-20 w-24 flex-col items-center justify-center rounded-t-md border-t-2 border-primary bg-secondary border-x border-b border-border">
-                                    <span className="text-xs font-semibold text-foreground truncate w-full text-center px-1">{mockLeaderboard[0].username}</span>
-                                    <span className="text-xl font-bold tabular-nums text-foreground">{mockLeaderboard[0].elo}</span>
+                                    <span className="text-xs font-semibold font-space text-foreground truncate w-full text-center px-1">{mockLeaderboard[0].username}</span>
+                                    <span className="text-xl font-bold font-space tabular-nums text-foreground">{mockLeaderboard[0].elo}</span>
                                 </div>
                             </div>
 
                             {/* 3rd */}
                             <div className="flex flex-col items-center">
-                                <span className="mb-1 text-xs text-muted-foreground">3rd</span>
+                                <span className="mb-1 text-xs font-space text-muted-foreground">3rd</span>
                                 <div className="flex h-14 w-20 flex-col items-center justify-center rounded-t-md bg-secondary border border-border">
-                                    <span className="text-xs font-semibold text-foreground truncate w-full text-center px-1">{mockLeaderboard[2].username}</span>
-                                    <span className="text-lg font-bold tabular-nums text-foreground">{mockLeaderboard[2].elo}</span>
+                                    <span className="text-xs font-semibold font-space text-foreground truncate w-full text-center px-1">{mockLeaderboard[2].username}</span>
+                                    <span className="text-lg font-bold font-space tabular-nums text-foreground">{mockLeaderboard[2].elo}</span>
                                 </div>
                             </div>
                         </motion.div>
@@ -115,8 +115,8 @@ export function Leaderboard() {
                         className="rounded-md border border-border flex-1 overflow-y-auto min-h-0"
                     >
                         <table className="w-full">
-                            <thead className="sticky top-0 bg-background z-10">
-                                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                            <thead className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">
+                                <tr className="border-b border-border text-left text-xs font-space text-muted-foreground">
                                     <th className="w-16 p-3 font-medium">#</th>
                                     <th className="p-3 font-medium">Player</th>
                                     <th className="p-3 text-right font-medium">ELO</th>
@@ -141,24 +141,24 @@ export function Leaderboard() {
                                         >
                                             <td className="p-3">
                                                 <span
-                                                    className={`text-sm font-bold tabular-nums ${isTop3 ? 'text-primary' : 'text-muted-foreground'
+                                                    className={`text-sm font-bold font-space tabular-nums ${isTop3 ? 'text-primary' : 'text-muted-foreground'
                                                         }`}
                                                 >
                                                     {player.rank}
                                                 </span>
                                             </td>
                                             <td className="p-3">
-                                                <span className={`text-sm font-medium ${isCurrentUser ? 'text-primary' : 'text-foreground'}`}>
+                                                <span className={`text-sm font-medium font-space ${isCurrentUser ? 'text-primary' : 'text-foreground'}`}>
                                                     {player.username}
-                                                    {isCurrentUser && <span className="ml-1 text-xs text-muted-foreground">(you)</span>}
+                                                    {isCurrentUser && <span className="ml-1 text-xs font-space text-muted-foreground">(you)</span>}
                                                 </span>
                                             </td>
                                             <td className="p-3 text-right">
-                                                <span className="text-sm font-bold tabular-nums text-foreground">
+                                                <span className="text-sm font-bold font-space tabular-nums text-foreground">
                                                     {player.elo.toLocaleString()}
                                                 </span>
                                             </td>
-                                            <td className="hidden p-3 text-right text-sm text-muted-foreground sm:table-cell">
+                                            <td className="hidden p-3 text-right text-sm font-space text-muted-foreground sm:table-cell">
                                                 {player.wins}/{player.losses}
                                             </td>
                                         </motion.tr>

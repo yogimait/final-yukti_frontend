@@ -69,11 +69,11 @@ export const SparklesCore = (props: ParticlesProps) => {
                             zIndex: 1,
                         },
 
-                        fpsLimit: 120,
+                        fpsLimit: 30,
                         interactivity: {
                             events: {
                                 onClick: {
-                                    enable: true,
+                                    enable: false,
                                     mode: "push",
                                 },
                                 onHover: {
@@ -204,8 +204,8 @@ export const SparklesCore = (props: ParticlesProps) => {
                                 random: false,
                                 size: false,
                                 speed: {
-                                    min: 0.1,
-                                    max: 1,
+                                    min: 0.05,
+                                    max: 0.3,
                                 },
                                 spin: {
                                     acceleration: 0,

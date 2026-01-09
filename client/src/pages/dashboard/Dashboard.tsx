@@ -40,23 +40,23 @@ export function Dashboard() {
                     transition={{ duration: 0.4 }}
                     className="mb-12 text-center"
                 >
-                    <p className="mb-2 text-sm text-muted-foreground">Welcome back,</p>
-                    <h1 className="mb-8 text-2xl font-medium text-foreground">
+                    <p className="mb-2 text-sm font-space text-muted-foreground">Welcome back,</p>
+                    <h1 className="mb-8 text-2xl font-medium font-space text-foreground">
                         {user?.username || 'Player'}
                     </h1>
 
                     {/* ELO - Hero number */}
                     <div className="mb-2">
-                        <span className="text-6xl font-bold tracking-tight text-foreground md:text-7xl">
+                        <span className="text-6xl font-bold font-space tracking-tight text-foreground md:text-7xl">
                             1,450
                         </span>
                     </div>
-                    <p className="mb-1 text-sm text-muted-foreground">ELO Rating</p>
+                    <p className="mb-1 text-sm font-space text-muted-foreground">ELO Rating</p>
 
                     {/* Rank */}
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Trophy className="h-4 w-4" />
-                        <span className="text-lg font-semibold text-foreground">#234</span>
+                        <span className="text-lg font-semibold font-space text-foreground">#234</span>
                         <span className="text-sm">Global Rank</span>
                     </div>
                 </motion.div>
@@ -69,7 +69,7 @@ export function Dashboard() {
                     className="mb-12 flex justify-center"
                 >
                     <Link to="/lobby">
-                        <Button size="xl" className="px-12">
+                        <Button size="xl" className="px-12 font-space">
                             <Play className="mr-2 h-5 w-5" />
                             Find Match
                         </Button>

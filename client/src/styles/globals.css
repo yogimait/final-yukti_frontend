@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ============================================
@@ -62,6 +63,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  /* Performance optimizations */
+  text-rendering: optimizeSpeed;
 }
 
 /* Focus styles - subtle ring */
@@ -100,8 +103,382 @@ body {
 }
 
 @theme inline {
+  --font-space: "Space Grotesk", sans-serif;
   --shadow-input:
     0px 2px 3px -1px rgba(0, 0, 0, 0.1),
     0px 1px 0px 0px rgba(25, 28, 33, 0.02),
     0px 0px 0px 1px rgba(25, 28, 33, 0.08);
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+}
+
+/* Soft glow animation with max 25% opacity */
+@keyframes soft-glow {
+
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+
+  50% {
+    opacity: 0.22;
+  }
+}
+
+.animate-soft-glow {
+  animation: soft-glow 2s ease-in-out infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-pulse,
+  .animate-soft-glow,
+  .animate-marquee,
+  .animate-marquee-vertical,
+  .animate-timer-pulse,
+  .animate-run-glow {
+    animation: none !important;
+  }
+}
+
+/* ============================================
+   BATTLE PAGE STYLES
+   Performance-focused, minimal animations
+   ============================================ */
+
+/* Timer Animations - CSS only, no Framer Motion */
+@keyframes timer-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes timer-critical {
+  0% {
+    color: hsl(48, 96%, 53%);
+  }
+
+  /* yellow */
+  100% {
+    color: hsl(0, 84%, 60%);
+  }
+
+  /* red */
+}
+
+.timer-warning {
+  animation: timer-pulse 5s ease-in-out infinite;
+}
+
+.timer-critical {
+  animation: timer-critical 1s ease-in-out forwards;
+  color: hsl(0, 84%, 60%);
+}
+
+/* Editor Run Glow - subtle bottom border */
+@keyframes run-glow {
+  0% {
+    box-shadow: inset 0 -2px 0 0 hsl(var(--primary) / 0);
+  }
+
+  50% {
+    box-shadow: inset 0 -2px 0 0 hsl(var(--primary) / 0.8);
+  }
+
+  100% {
+    box-shadow: inset 0 -2px 0 0 hsl(var(--primary) / 0);
+  }
+}
+
+.animate-run-glow {
+  animation: run-glow 200ms ease-out;
+}
+
+/* Editor Submit Overlay */
+.editor-locked {
+  position: relative;
+  pointer-events: none;
+}
+
+.editor-locked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--background) / 0.6);
+  backdrop-filter: blur(1px);
+  z-index: 10;
+}
+
+/* Editor Blurred (when whiteboard is open) */
+.editor-blurred {
+  filter: blur(2px);
+  opacity: 0.5;
+  pointer-events: none;
+  transition: filter 200ms ease, opacity 200ms ease;
+}
+
+/* Collapsible Panel Slide Animation */
+.panel-slide {
+  transition: transform 200ms ease, width 200ms ease;
+  will-change: transform;
+}
+
+.panel-collapsed {
+  transform: translateX(-100%);
+}
+
+.panel-collapsed-right {
+  transform: translateX(100%);
+}
+
+/* Bottom Sheet Whiteboard */
+.bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: translateY(100%);
+  transition: transform 250ms ease-out;
+  will-change: transform;
+  z-index: 50;
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+/* Bottom Action Bar Auto-fade */
+.action-bar {
+  transition: opacity 300ms ease;
+}
+
+.action-bar.faded {
+  opacity: 0.6;
+}
+
+.action-bar:hover,
+.action-bar.active {
+  opacity: 1;
+}
+
+/* Action Button Hover */
+.action-btn {
+  transition: transform 150ms ease;
+}
+
+.action-btn:hover {
+  transform: scale(1.03);
+}
+
+/* Battle Top Bar */
+.battle-top-bar {
+  height: 56px;
+  background: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Green Check Pop Animation */
+@keyframes check-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-check-pop {
+  animation: check-pop 300ms ease-out forwards;
+}
+
+/* Spinner for running state */
+@keyframes simple-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-simple-spin {
+  animation: simple-spin 1s linear infinite;
+}
+
+/* ============================================
+   PROFILE PAGE - OPTIMIZED CSS ANIMATIONS
+   GPU-accelerated, low-overhead animations
+   ============================================ */
+
+/* Avatar glow pulse - GPU optimized */
+@keyframes avatar-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 35px rgba(255, 255, 255, 0.18);
+  }
+}
+
+.animate-avatar-glow {
+  animation: avatar-glow 3s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+/* Status ring pulse for online status */
+@keyframes status-pulse {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+  will-change: opacity;
+}
+
+/* Status ring rotate for in-match status */
+@keyframes status-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-status-rotate {
+  animation: status-rotate 8s linear infinite;
+  will-change: transform;
+}
+
+/* CTA button glow pulse */
+@keyframes cta-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+  }
+
+  50% {
+    box-shadow: 0 0 35px rgba(139, 92, 246, 0.25);
+  }
+}
+
+.animate-cta-glow {
+  animation: cta-glow 2s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+/* Profile gradient flow - very slow, GPU optimized */
+@keyframes gradient-flow {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-flow {
+  background-size: 200% 200%;
+  animation: gradient-flow 15s ease infinite;
+  will-change: background-position;
+}
+
+/* Fade in up animation for sections */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+/* Progress bar fill */
+@keyframes progress-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-progress-fill {
+  animation: progress-fill 1s ease-out forwards;
+  transform-origin: left;
+}
+
+/* Disable animations for reduced motion AND add to existing rule */
+@media (prefers-reduced-motion: reduce) {
+
+  .animate-avatar-glow,
+  .animate-status-pulse,
+  .animate-status-rotate,
+  .animate-cta-glow,
+  .animate-gradient-flow,
+  .animate-fade-in-up,
+  .animate-progress-fill {
+    animation: none !important;
+  }
 }

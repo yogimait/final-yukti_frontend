@@ -1,121 +1,132 @@
-Here is the raw Markdown code. You can copy the block below and paste it directly into a `README.md` file.
-
-```markdown
-# ⚔️ CodeBattle Arena (CBA)
+# ⚔️ CodeBattle Arena (Yukti)
 
 ![Status](https://img.shields.io/badge/Status-In--Development-yellow)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Stack](https://img.shields.io/badge/Stack-MERN-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)
 
-**CodeBattle Arena** is a real-time competitive coding platform designed to gamify Data Structures & Algorithms (DSA) preparation. It emphasizes not just correctness, but speed, memory optimization, and peer collaboration through 1v1 Duels and Squad Wars.
+**CodeBattle Arena (Yukti)** is a cutting-edge, real-time competitive coding platform designed to revolutionize how developers prepare for technical interviews and improve their Data Structures & Algorithms (DSA) skills. Unlike traditional platforms, it gamifies the experience with high-stakes 1v1 Duels, collaborative Squad Wars, and a focus on code optimization (time & memory) rather than just correctness.
 
 ---
 
 ## 🚀 Key Features
 
-- **1v1 Duels:** Real-time battles with ELO-based matchmaking or private room invites.
-- **Squad Wars:** Team up with up to 5 friends. The team score is the **average** of all members, forcing stronger players to mentor weaker ones.
-- **Real-Time Collaboration:** Built-in Audio/Video calls and Whiteboard support.
-- **Performance Scoring:** Points awarded for execution speed and optimization, not just passing test cases.
-- **Secure Execution:** Code runs in isolated Docker containers via Judge0.
+### 🎮 Competitive Game Modes
+*   **1v1 Duels:** Challenge opponents in real-time battles. Matchmaking is powered by an ELO rating system to ensure fair play, or invite friends directly via private rooms.
+*   **Squad Wars:** Form a team of up to 5 friends. The unique scoring system averages the team's performance, encouraging stronger players to mentor and support their teammates during the battle.
+
+### ⚡ Advanced Code Execution
+*   **Judge0 Integration:** Secure, sandboxed remote code execution supporting multiple languages.
+*   **Performance Metrics:** Detailed analysis of execution time and memory usage.
+*   **Optimization Scoring:** "Bucketing Method" awards points not just for passing test cases, but for writing efficient code (e.g., O(n) vs O(n²)).
+
+### 🤝 Real-Time Collaboration
+*   **Collaborative Environment:** Built-in whiteboard for strategizing before or during Squad Wars.
+*   **Communication:** Integrated audio/video calls to discuss approaches in real-time.
+*   **Live Updates:** Socket.io ensures instantaneous synchronization of game state, scores, and code changes.
+
+### 📊 Progress & Analytics
+*   **Comprehensive Dashboard:** Track your ELO, win/loss ratio, and recent match history.
+*   **Leaderboards:** Global and friend-based rankings to fuel competition.
+*   **Heatmaps:** Visual activity tracking similar to GitHub contributions.
 
 ---
 
 ## 🛠️ Technical Architecture
 
+The project is built as a monorepo with a distinct client-server architecture, fully typed with TypeScript.
+
 ### Tech Stack
-| Component | Technology | Reasoning |
-| :--- | :--- | :--- |
-| **Frontend** | Vite + React (TypeScript) | Fast build times & superior SPA performance. |
-| **Styling** | Tailwind CSS | Rapid UI development. |
-| **Backend** | Node.js + Express (TypeScript) | Event-driven architecture. |
-| **Real-Time** | Socket.io | Bi-directional game state sync. |
-| **Database** | MongoDB + Redis | Hybrid storage for persistence and speed. |
-| **Execution** | Judge0 (Dockerized) | Sandboxed remote code execution. |
-| **Collab** | WebRTC / PeerJS | In-game video/audio bubbles. |
 
-### Database Strategy
-* **Redis (Hot Storage):** Used for live game state (timers, scores), matchmaking queues, and real-time leaderboards.
-* **MongoDB (Cold Storage):** Used for persistent user profiles, match history logs, and the problem bank.
+| Domain | Technologies |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, TypeScript, Tailwind CSS, Framer Motion, Shadcn UI |
+| **Backend** | Node.js, Express, TypeScript |
+| **Database** | MongoDB (Persistence), Redis (Caching & Real-time Game State) |
+| **Real-Time** | Socket.io |
+| **Execution** | Judge0 (Dockerized) |
+| **DevOps** | Docker, Docker Compose |
 
----
-
-## 🎮 Game Modes
-
-### 1. 1v1 Duel
-* **Matchmaking:** Random (Elo Rating) or Friend Invite.
-* **Gameplay:** Simultaneous solving.
-* **Analysis:** Whiteboard unlocks *after* the match.
-
-### 2. Squad Wars
-* **Team Size:** Lobby of up to 5 players.
-* **Environment:** Individual editors (no shared code).
-* **Whiteboard:** Available **DURING** the match for strategy.
-* **Scoring Logic:**
-    > Team Score = Average(Score P1 + Score P2 + ... + Score Pn)
-    *If one player fails, the team ranking drops.*
-
----
-
-## 📊 Scoring Algorithm
-
-Total Score (100%) is calculated based on:
-
-1.  **Correctness (60%):** Hidden test cases passed.
-2.  **Time Efficiency (20%):** Speed of submission relative to allowed time.
-3.  **Optimization (20%):** Based on the "Bucketing Method":
-    * *Full Points:* Execution Time < Ideal Threshold (e.g., 0.5s).
-    * *Partial Points:* Between Threshold and Limit.
-    * *Zero Points:* TLE or Memory Limit Exceeded.
-
----
-
-## 🛡️ Security
-
-* **Sandboxing:** All code executes in isolated Docker containers (Judge0).
-* **Blur Detection:** Monitors tab/window switching during active matches to discourage cheating.
-
----
-
-## 🗺️ Roadmap (MVP)
-
-- [ ] **Setup:** Repo init (Vite+Express), Docker setup for Judge0 & Redis.
-- [ ] **Auth:** Login via GitHub/Google.
-- [ ] **Lobby:** Socket.io room creation and joining.
-- [ ] **Game Loop:** Fetch Problem -> Timer -> Judge0 Submission -> Scoring.
-- [ ] **Squads:** Implement "Average Score" logic.
-- [ ] **UI:** Split-screen interface (Problem/Editor/Opponent).
-
----
-
-## 📦 Local Installation
-
-1.  **Clone the repo**
-    ```bash
-    git clone [https://github.com/your-username/codebattle-arena.git](https://github.com/your-username/codebattle-arena.git)
-    cd codebattle-arena
-    ```
-
-2.  **Start Infrastructure (Docker)**
-    *Ensure Docker Desktop is running.*
-    ```bash
-    docker-compose up -d
-    ```
-
-3.  **Install Dependencies**
-    ```bash
-    # Server
-    cd server && npm install
-    
-    # Client
-    cd ../client && npm install
-    ```
-
-4.  **Run Development**
-    ```bash
-    # Run both client and server
-    npm run dev
-    ```
+### Project Structure
 
 ```
+final-yukti_frontend/
+├── client/                 # React Frontend application
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── pages/          # Application views (Landing, Battle, Dashboard)
+│   │   ├── store/          # Redux state management
+│   │   └── socket/         # Socket.io client handlers
+│   └── ...
+├── server/                 # Express Backend application
+│   ├── src/
+│   │   ├── controllers/    # Route logic (Auth, Submission, Battle)
+│   │   ├── models/         # Mongoose schemas
+│   │   ├── services/       # External services (Judge0, Redis)
+│   │   └── socket/         # Socket.io server events
+│   └── ...
+└── docker-compose.yml      # Infrastructure setup (Redis, etc.)
+```
+
+---
+
+## 📦 Installation & Setup
+
+Follow these steps to get the project running locally.
+
+### Prerequisites
+*   Node.js (v18+)
+*   Docker & Docker Compose (for Redis and Judge0)
+*   Git
+
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd final-yukti_frontend
+```
+
+### 2. Start Infrastructure
+Start the required services (Redis, etc.) using Docker.
+```bash
+docker-compose up -d
+```
+*Note: Ensure you have a Judge0 instance running locally or configured to point to a public API in your environment variables.*
+
+### 3. Backend Setup
+Navigate to the server directory, install dependencies, and start the development server.
+
+```bash
+cd server
+npm install
+
+# Create a .env file based on .env.example (ensure MONGO_URI, REDIS_URL, etc. are set)
+# Start the server
+npm run dev
+```
+
+### 4. Frontend Setup
+Open a new terminal, navigate to the client directory, and start the React application.
+
+```bash
+cd client
+npm install
+
+# Start the development server
+npm run dev
+```
+
+Visit `http://localhost:5173` to view the application.
+
+---
+
+## 🛡️ Security & Integrity
+
+*   **Sandboxed Execution:** User code runs in isolated Docker containers via Judge0 to prevent malicious activities.
+*   **Anti-Cheat Mechanisms:** Blur detection monitors tab switching to discourage external help during competitive matches.
+*   **Secure Auth:** JWT-based authentication for secure session management.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request for any enhancements or bug fixes.
