@@ -39,12 +39,8 @@ export function LanguageSelect({
     const [pendingValue, setPendingValue] = useState<string | null>(null);
 
     const handleChange = (newValue: string) => {
-        if (locked && newValue !== value) {
-            setPendingValue(newValue);
-            setShowConfirm(true);
-        } else {
-            onChange(newValue);
-        }
+        // Always allow language change freely
+        onChange(newValue);
     };
 
     const confirmChange = () => {

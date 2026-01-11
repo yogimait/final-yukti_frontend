@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Send, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { PlayerMiniCard, BattleTimer, LanguageSelect, BottomActionBar, WhiteboardSheet, BattleChat } from '@/components/battle';
-import { EditorPanel } from './EditorPanel';
+import { DEFAULT_CODE } from '@/components/battle/CodeEditor';
+import { EditorOutputPanel } from './EditorOutputPanel';
 import { ProblemPanel } from './ProblemPanel';
 import { OpponentPanel } from './OpponentPanel';
 import { MATCH_DURATION } from '@/utils/constants';
@@ -48,12 +49,8 @@ const mockOpponent = {
     updatedAt: '2024-01-01',
 };
 
-const defaultCode = `// Write your solution here
-
-function solution(input) {
-    // Your code here
-    
-}`;
+// Default code is now imported from CodeEditor
+type SupportedLanguage = 'javascript' | 'python' | 'cpp' | 'java' | 'typescript' | 'go' | 'rust';
 
 /**
  * Battle Page - Full Socket + Redux Integration
@@ -88,12 +85,23 @@ export function Battle() {
     const opponentDisplay = opponent || mockOpponent;
 
     // Local UI state (not socket-related)
-    const [code, setCode] = useState(defaultCode);
-    const [language, setLanguage] = useState('javascript');
+    const [language, setLanguage] = useState<SupportedLanguage>('javascript');
+    const [code, setCode] = useState(DEFAULT_CODE['javascript']);
     const [isRunning, setIsRunning] = useState(false);
     const [isWhiteboardOpen, setIsWhiteboardOpen] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [output, setOutput] = useState('');
+
+    // Code buffers per language (preserves code when switching)
+    const codeBuffersRef = useRef<Record<SupportedLanguage, string>>({
+        javascript: DEFAULT_CODE['javascript'],
+        typescript: DEFAULT_CODE['typescript'],
+        python: DEFAULT_CODE['python'],
+        cpp: DEFAULT_CODE['cpp'],
+        java: DEFAULT_CODE['java'],
+        go: DEFAULT_CODE['go'],
+        rust: DEFAULT_CODE['rust'],
+    });
 
     // Derived state
     const isSubmitted = battleStatus === 'finished';
@@ -215,8 +223,9 @@ export function Battle() {
 
     const handleRun = useCallback(async () => {
         setIsRunning(true);
+        setOutput('> Running code...\n');
 
-        // Emit typing/running status to opponent
+        // Emit running status to opponent
         if (isConnected && matchId) {
             emit(SOCKET_EVENTS.PLAYER_UPDATE, {
                 matchId,
@@ -224,12 +233,48 @@ export function Battle() {
             });
         }
 
-        // Simulate code execution
+        // Execute code in browser (for JavaScript only - others need backend)
         setTimeout(() => {
-            setOutput('> Running tests...\n✓ Test 1 passed\n✓ Test 2 passed\n✗ Test 3 failed');
+            try {
+                if (language === 'javascript' || language === 'typescript') {
+                    // Capture console.log output
+                    const logs: string[] = [];
+                    const originalLog = console.log;
+                    console.log = (...args) => {
+                        logs.push(args.map(arg =>
+                            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                        ).join(' '));
+                    };
+
+                    try {
+                        // Execute the code
+                        // eslint-disable-next-line no-eval
+                        eval(code);
+
+                        // Restore console.log
+                        console.log = originalLog;
+
+                        if (logs.length > 0) {
+                            setOutput('> Running code...\n\n' + logs.join('\n'));
+                        } else {
+                            setOutput('> Running code...\n\n(No output - add console.log() to see results)');
+                        }
+                    } catch (execError: unknown) {
+                        console.log = originalLog;
+                        const errorMessage = execError instanceof Error ? execError.message : String(execError);
+                        setOutput(`> Running code...\n\n❌ Error: ${errorMessage}`);
+                    }
+                } else {
+                    // For other languages, show a message (backend execution needed)
+                    setOutput(`> Running code...\n\n⚠️ ${language.toUpperCase()} execution requires backend integration.\nCurrently only JavaScript runs in browser.`);
+                }
+            } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                setOutput(`> Running code...\n\n❌ Error: ${errorMessage}`);
+            }
             setIsRunning(false);
-        }, 1000);
-    }, [isConnected, matchId, emit]);
+        }, 500);
+    }, [isConnected, matchId, emit, code, language]);
 
     const handleSubmit = useCallback(() => {
         console.log('Submitting code:', code);
@@ -245,13 +290,17 @@ export function Battle() {
     }, [code, language, isConnected, matchId, emit, dispatch]);
 
     const handleReset = useCallback(() => {
-        setCode(defaultCode);
+        setCode(DEFAULT_CODE[language]);
+        codeBuffersRef.current[language] = DEFAULT_CODE[language];
         setOutput('');
-    }, []);
+    }, [language]);
 
     const handleLanguageChange = useCallback((newLanguage: string) => {
-        setLanguage(newLanguage);
-        setCode(defaultCode);
+        const newLang = newLanguage as SupportedLanguage;
+        // Reset code to default template for new language
+        setLanguage(newLang);
+        setCode(DEFAULT_CODE[newLang]);
+        setOutput('');
     }, []);
 
     const handleWhiteboardToggle = useCallback(() => {
@@ -339,29 +388,16 @@ export function Battle() {
                     <ProblemPanel />
                 </div>
 
-                {/* Editor - THE KING 👑 */}
-                <div className="flex flex-1 flex-col">
-                    <EditorPanel
-                        code={code}
-                        onChange={setCode}
-                        language={language as 'javascript' | 'python' | 'cpp' | 'java' | 'typescript'}
-                        isRunning={isRunning}
-                        isLocked={isSubmitted}
-                        isBlurred={isWhiteboardOpen}
-                    />
-
-                    {/* Output Panel */}
-                    {output && (
-                        <div className="h-28 border-t border-border bg-[#0b0f1a] flex-shrink-0">
-                            <div className="border-b border-border/50 px-4 py-1.5 text-xs font-medium text-white/60">
-                                Output
-                            </div>
-                            <pre className="overflow-auto p-3 font-mono text-xs text-white/80">
-                                {output}
-                            </pre>
-                        </div>
-                    )}
-                </div>
+                {/* Editor + Output - Resizable Vertical Split */}
+                <EditorOutputPanel
+                    code={code}
+                    onChange={setCode}
+                    language={language as 'javascript' | 'python' | 'cpp' | 'java' | 'typescript'}
+                    isRunning={isRunning}
+                    isLocked={isSubmitted}
+                    isBlurred={isWhiteboardOpen}
+                    output={output}
+                />
 
                 {/* Opponent Panel - Right, Minimal */}
                 <div className="hidden lg:flex w-48 flex-shrink-0">

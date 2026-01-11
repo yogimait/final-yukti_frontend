@@ -1,85 +1,99 @@
-import { useEffect, useRef, memo } from 'react';
-import { EditorState, type Extension } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-import { javascript } from '@codemirror/lang-javascript';
-import { python } from '@codemirror/lang-python';
-import { cpp } from '@codemirror/lang-cpp';
-import { java } from '@codemirror/lang-java';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { autocompletion, completionKeymap } from '@codemirror/autocomplete';
-import { indentOnInput, bracketMatching, foldGutter, foldKeymap, syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+import { useRef, useCallback, memo, useEffect } from 'react';
+import Editor, { type OnMount, type BeforeMount } from '@monaco-editor/react';
+import type { editor } from 'monaco-editor';
 import { cn } from '@/lib/utils';
+
+type SupportedLanguage = 'javascript' | 'python' | 'cpp' | 'java' | 'typescript' | 'go' | 'rust';
 
 interface CodeEditorProps {
     value: string;
     onChange: (value: string) => void;
-    language?: 'javascript' | 'python' | 'cpp' | 'java' | 'typescript' | 'go' | 'rust';
+    language?: SupportedLanguage;
     disabled?: boolean;
     className?: string;
 }
 
-// Custom dark theme matching #0b0f1a background
-const customDarkTheme = EditorView.theme({
-    '&': {
-        backgroundColor: '#0b0f1a',
-        height: '100%',
-    },
-    '.cm-content': {
-        caretColor: 'hsl(217, 91%, 60%)',
-        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
-        fontSize: '14px',
-    },
-    '.cm-cursor, .cm-dropCursor': {
-        borderLeftColor: 'hsl(217, 91%, 60%)',
-    },
-    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
-        backgroundColor: 'rgba(59, 130, 246, 0.3)',
-    },
-    '.cm-activeLine': {
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    },
-    '.cm-activeLineGutter': {
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    },
-    '.cm-gutters': {
-        backgroundColor: '#0b0f1a',
-        color: 'rgba(255, 255, 255, 0.3)',
-        border: 'none',
-    },
-    '.cm-lineNumbers .cm-gutterElement': {
-        padding: '0 12px 0 8px',
-    },
-    '.cm-scroller': {
-        overflow: 'auto',
-    },
-}, { dark: true });
+// Monaco language mappings
+const LANGUAGE_MAP: Record<SupportedLanguage, string> = {
+    javascript: 'javascript',
+    typescript: 'typescript',
+    python: 'python',
+    cpp: 'cpp',
+    java: 'java',
+    go: 'go',
+    rust: 'rust',
+};
 
-// Get language extension based on language prop
-function getLanguageExtension(language: string): Extension {
-    switch (language) {
-        case 'python':
-            return python();
-        case 'cpp':
-            return cpp();
-        case 'java':
-            return java();
-        case 'typescript':
-            return javascript({ typescript: true });
-        case 'javascript':
-        default:
-            return javascript();
+// Default code templates per language
+const DEFAULT_CODE: Record<SupportedLanguage, string> = {
+    javascript: `// Write your solution here
+
+function solution(input) {
+    // Your code here
+    
+}`,
+    typescript: `// Write your solution here
+
+function solution(input: any): any {
+    // Your code here
+    
+}`,
+    python: `# Write your solution here
+
+def solution(input):
+    # Your code here
+    pass
+`,
+    cpp: `// Write your solution here
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    // Your code here
+    
+    return 0;
+}`,
+    java: `// Write your solution here
+import java.util.*;
+
+public class Solution {
+    public static void main(String[] args) {
+        // Your code here
+        
     }
-}
+}`,
+    go: `// Write your solution here
+package main
+
+import "fmt"
+
+func main() {
+    // Your code here
+    fmt.Println("Hello")
+}`,
+    rust: `// Write your solution here
+
+fn main() {
+    // Your code here
+    println!("Hello");
+}`,
+};
 
 /**
- * CodeEditor - CodeMirror 6 based editor
+ * CodeEditor - Monaco Editor based component
+ * 
+ * Performance Rules (CRITICAL):
+ * - Local state for code (NOT Redux)
+ * - Memoized to prevent re-renders
+ * - Monaco owns: cursor, text input, UI
+ * - Only syncs to parent on change (debounced internally)
  * 
  * Features:
- * - Syntax highlighting for multiple languages
- * - One Dark theme customized for #0b0f1a background
- * - Line numbers, bracket matching, auto-completion
- * - No animations, performance focused
+ * - Multi-language support
+ * - Dark theme matching battle UI
+ * - ReadOnly mode for locked state
+ * - No minimap (performance)
  */
 function CodeEditorComponent({
     value,
@@ -88,102 +102,147 @@ function CodeEditorComponent({
     disabled = false,
     className,
 }: CodeEditorProps) {
-    const editorRef = useRef<HTMLDivElement>(null);
-    const viewRef = useRef<EditorView | null>(null);
-    const onChangeRef = useRef(onChange);
+    const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+    const monacoRef = useRef<typeof import('monaco-editor') | null>(null);
 
-    // Keep onChange ref up to date
-    useEffect(() => {
-        onChangeRef.current = onChange;
+    // Configure Monaco before mount
+    const handleBeforeMount: BeforeMount = useCallback((monaco) => {
+        monacoRef.current = monaco;
+
+        // Define custom dark theme matching battle UI
+        monaco.editor.defineTheme('battleDark', {
+            base: 'vs-dark',
+            inherit: true,
+            rules: [
+                { token: 'comment', foreground: '6A737D', fontStyle: 'italic' },
+                { token: 'keyword', foreground: 'FF7B72' },
+                { token: 'string', foreground: 'A5D6FF' },
+                { token: 'number', foreground: '79C0FF' },
+                { token: 'function', foreground: 'D2A8FF' },
+                { token: 'variable', foreground: 'FFA657' },
+                { token: 'type', foreground: '7EE787' },
+            ],
+            colors: {
+                'editor.background': '#0b0f1a',
+                'editor.foreground': '#E6EDF3',
+                'editor.lineHighlightBackground': '#1a1f2e',
+                'editor.selectionBackground': '#264F78',
+                'editorCursor.foreground': '#3B82F6',
+                'editorLineNumber.foreground': '#484f58',
+                'editorLineNumber.activeForeground': '#E6EDF3',
+                'editor.inactiveSelectionBackground': '#1a3a5c',
+                'editorGutter.background': '#0b0f1a',
+            },
+        });
+    }, []);
+
+    // Handle editor mount
+    const handleMount: OnMount = useCallback((editor, monaco) => {
+        editorRef.current = editor;
+        monacoRef.current = monaco;
+
+        // Focus editor
+        editor.focus();
+    }, []);
+
+    // Handle value changes - pass to parent
+    const handleChange = useCallback((newValue: string | undefined) => {
+        if (newValue !== undefined) {
+            onChange(newValue);
+        }
     }, [onChange]);
 
-    // Create editor
+    // Update readOnly when disabled changes
     useEffect(() => {
-        if (!editorRef.current) return;
-
-        const updateListener = EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-                onChangeRef.current(update.state.doc.toString());
-            }
-        });
-
-        const extensions: Extension[] = [
-            lineNumbers(),
-            highlightActiveLineGutter(),
-            highlightSpecialChars(),
-            history(),
-            foldGutter(),
-            drawSelection(),
-            dropCursor(),
-            EditorState.allowMultipleSelections.of(true),
-            indentOnInput(),
-            syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-            bracketMatching(),
-            autocompletion(),
-            rectangularSelection(),
-            crosshairCursor(),
-            highlightActiveLine(),
-            keymap.of([
-                ...defaultKeymap,
-                ...historyKeymap,
-                ...completionKeymap,
-                ...foldKeymap,
-                indentWithTab,
-            ]),
-            getLanguageExtension(language),
-            oneDark,
-            customDarkTheme,
-            updateListener,
-            EditorState.readOnly.of(disabled),
-        ];
-
-        const state = EditorState.create({
-            doc: value,
-            extensions,
-        });
-
-        const view = new EditorView({
-            state,
-            parent: editorRef.current,
-        });
-
-        viewRef.current = view;
-
-        return () => {
-            view.destroy();
-            viewRef.current = null;
-        };
-    }, [language, disabled]); // Recreate on language or disabled change
-
-    // Update value when it changes externally
-    useEffect(() => {
-        const view = viewRef.current;
-        if (!view) return;
-
-        const currentValue = view.state.doc.toString();
-        if (value !== currentValue) {
-            view.dispatch({
-                changes: {
-                    from: 0,
-                    to: currentValue.length,
-                    insert: value,
-                },
-            });
+        if (editorRef.current) {
+            editorRef.current.updateOptions({ readOnly: disabled });
         }
-    }, [value]);
+    }, [disabled]);
 
     return (
-        <div
-            ref={editorRef}
-            className={cn(
-                'h-full w-full overflow-hidden',
-                disabled && 'opacity-60',
-                className
-            )}
-        />
+        <div className={cn('h-full w-full', disabled && 'opacity-60', className)}>
+            <Editor
+                height="100%"
+                language={LANGUAGE_MAP[language]}
+                value={value}
+                theme="battleDark"
+                onChange={handleChange}
+                beforeMount={handleBeforeMount}
+                onMount={handleMount}
+                loading={
+                    <div className="flex h-full items-center justify-center bg-[#0b0f1a] text-muted-foreground">
+                        Loading editor...
+                    </div>
+                }
+                options={{
+                    // Performance optimizations
+                    minimap: { enabled: false },
+                    smoothScrolling: false,
+                    cursorSmoothCaretAnimation: 'off',
+                    renderWhitespace: 'none',
+
+                    // UI settings
+                    fontSize: 14,
+                    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+                    lineNumbers: 'on',
+                    lineHeight: 22,
+                    padding: { top: 16, bottom: 16 },
+
+                    // Editor behavior
+                    tabSize: 4,
+                    insertSpaces: true,
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    wordWrap: 'off',
+
+                    // Features
+                    bracketPairColorization: { enabled: true },
+                    autoClosingBrackets: 'always',
+                    autoClosingQuotes: 'always',
+                    autoIndent: 'full',
+                    formatOnPaste: true,
+
+                    // Suggestions
+                    quickSuggestions: true,
+                    suggestOnTriggerCharacters: true,
+                    acceptSuggestionOnEnter: 'on',
+
+                    // Lock state
+                    readOnly: disabled,
+                    domReadOnly: disabled,
+
+                    // Hide unnecessary UI
+                    folding: true,
+                    foldingHighlight: false,
+                    renderLineHighlight: 'line',
+                    overviewRulerBorder: false,
+                    hideCursorInOverviewRuler: true,
+                    scrollbar: {
+                        vertical: 'auto',
+                        horizontal: 'auto',
+                        useShadows: false,
+                        verticalScrollbarSize: 10,
+                        horizontalScrollbarSize: 10,
+                    },
+                }}
+            />
+        </div>
     );
 }
 
+/**
+ * Memoized CodeEditor - Only re-renders when necessary
+ * 
+ * Re-renders on:
+ * - Language change
+ * - Disabled/readOnly change
+ * - Value change (controlled externally)
+ * 
+ * Does NOT re-render on:
+ * - Timer updates
+ * - Chat updates
+ * - Opponent events
+ */
 export const CodeEditor = memo(CodeEditorComponent, (prevProps, nextProps) => {
     return (
         prevProps.value === nextProps.value &&
@@ -191,3 +250,6 @@ export const CodeEditor = memo(CodeEditorComponent, (prevProps, nextProps) => {
         prevProps.disabled === nextProps.disabled
     );
 });
+
+// Export default templates for language switching
+export { DEFAULT_CODE };
