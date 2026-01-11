@@ -5,9 +5,15 @@ import { cn } from '@/lib/utils';
 
 type OpponentStatus = 'idle' | 'typing' | 'running' | 'submitted';
 
+interface OpponentProgress {
+    testsPassed: number;
+    totalTests: number;
+}
+
 interface OpponentPanelProps {
     opponent: User;
     status?: OpponentStatus;
+    progress?: OpponentProgress;
     className?: string;
 }
 
@@ -17,6 +23,7 @@ interface OpponentPanelProps {
  * Content:
  * - Avatar + Name + ELO
  * - Status: Typing..., Running tests..., Submitted
+ * - Progress: X/Y tests passed (optional)
  * 
  * Visual Language:
  * | State     | Effect                     |
@@ -31,6 +38,7 @@ interface OpponentPanelProps {
 function OpponentPanelComponent({
     opponent,
     status = 'idle',
+    progress,
     className,
 }: OpponentPanelProps) {
     const [showCheckPop, setShowCheckPop] = useState(false);
@@ -116,6 +124,23 @@ function OpponentPanelComponent({
                             </>
                         )}
                     </div>
+
+                    {/* Progress indicator */}
+                    {progress && progress.totalTests > 0 && (
+                        <div className="mt-2 pt-2 border-t border-border/50">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">Tests</span>
+                                <span className={cn(
+                                    'font-medium tabular-nums',
+                                    progress.testsPassed === progress.totalTests
+                                        ? 'text-green-500'
+                                        : 'text-foreground'
+                                )}>
+                                    {progress.testsPassed}/{progress.totalTests}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -129,6 +154,9 @@ export const OpponentPanel = memo(OpponentPanelComponent, (prevProps, nextProps)
     return (
         prevProps.opponent.id === nextProps.opponent.id &&
         prevProps.opponent.elo === nextProps.opponent.elo &&
-        prevProps.status === nextProps.status
+        prevProps.status === nextProps.status &&
+        prevProps.progress?.testsPassed === nextProps.progress?.testsPassed &&
+        prevProps.progress?.totalTests === nextProps.progress?.totalTests
     );
 });
+

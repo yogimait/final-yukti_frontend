@@ -10,12 +10,16 @@ export const SOCKET_EVENTS = {
 
     // Room events
     ROOM_CREATE: 'room:create',
+    ROOM_CREATED: 'room:created',
     ROOM_JOIN: 'room:join',
+    ROOM_JOINED: 'room:joined',
     ROOM_LEAVE: 'room:leave',
     ROOM_UPDATE: 'room:update',
     ROOM_PLAYER_JOINED: 'room:player_joined',
     ROOM_PLAYER_LEFT: 'room:player_left',
     ROOM_READY: 'room:ready',
+    ROOM_PLAYERS: 'room:players',
+    ROOM_ERROR: 'room:error',
 
     // Match events
     MATCH_START: 'match:start',
@@ -107,3 +111,39 @@ export interface ChatMessageResponse {
     message: string;
     timestamp: string;
 }
+
+// Battle-specific events
+export interface OpponentProgressPayload {
+    opponentId: string;
+    testsPassed: number;
+    totalTests: number;
+    status: 'idle' | 'typing' | 'running' | 'submitted';
+}
+
+export interface BattleOverPayload {
+    winnerId: string;
+    loserId: string;
+    winnerScore: number;
+    loserScore: number;
+    reason: 'all_tests_passed' | 'time_up' | 'forfeit';
+}
+
+export interface RoomPlayerPayload {
+    playerId: string;
+    username: string;
+    elo: number;
+    isReady: boolean;
+}
+
+export interface RoomListPayload {
+    rooms: Array<{
+        id: string;
+        name: string;
+        host: string;
+        players: number;
+        maxPlayers: number;
+        type: '1v1' | 'squad';
+        status: 'open' | 'almost' | 'full';
+    }>;
+}
+

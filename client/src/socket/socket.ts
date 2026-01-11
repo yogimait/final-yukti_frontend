@@ -14,11 +14,18 @@ export const getSocket = (): Socket => {
     return socket;
 };
 
-export const connectSocket = (token: string): Socket => {
+export const connectSocket = (token: string, userInfo?: { username: string; elo: number }): Socket => {
     const socket = getSocket();
 
     if (!socket.connected) {
         socket.auth = { token };
+        // Pass user info in query for backend identification
+        if (userInfo) {
+            socket.io.opts.query = {
+                username: userInfo.username,
+                elo: userInfo.elo.toString(),
+            };
+        }
         socket.connect();
     }
 

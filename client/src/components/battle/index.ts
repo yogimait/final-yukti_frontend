@@ -7,4 +7,6 @@ export { BattleTimer } from './BattleTimer';
 export { LanguageSelect } from './LanguageSelect';
 export { BottomActionBar } from './BottomActionBar';
 export { WhiteboardSheet } from './WhiteboardSheet';
-export { CodeEditor } from './CodeEditor';
+export { CodeEditor, DEFAULT_CODE } from './CodeEditor';
+export { BattleChat } from './BattleChat';
+

@@ -36,3 +36,53 @@ export {
     clearToasts,
     setSocketConnected,
 } from './ui.slice';
+
+// Lobby slice exports
+export {
+    setRooms,
+    addRoom,
+    updateRoom,
+    removeRoom,
+    addActivityEvent,
+    clearActivityEvents,
+    setLoadingRooms,
+    type LobbyRoom,
+    type ActivityEvent,
+} from './lobby.slice';
+
+// Battle slice exports
+export {
+    setRoomId,
+    setOpponent,
+    setOpponentConnected,
+    setOpponentStatus,
+    setOpponentProgress,
+    setBattleStatus,
+    setBattleResult,
+    addChatMessage,
+    clearUnreadCount,
+    resetBattle,
+    type OpponentStatus,
+    type BattleStatus,
+    type BattleResult,
+    type OpponentInfo,
+    type OpponentProgress,
+    type ChatMessage,
+} from './battle.slice';
+
+// Room slice exports
+export {
+    setRoomInfo,
+    setPlayers as setRoomPlayers,
+    addPlayer,
+    removePlayer,
+    updatePlayerReady,
+    addRoomChatMessage,
+    clearRoomChat,
+    setRoomLoading,
+    resetRoom,
+    type RoomPlayer,
+    type RoomChatMessage,
+    type RoomInfo,
+} from './room.slice';
+

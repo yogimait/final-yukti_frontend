@@ -1,66 +1,51 @@
-import { useEffect, useCallback, useRef } from 'react';
-import type { Socket } from 'socket.io-client';
-import { getSocket, connectSocket, disconnectSocket } from '@/socket';
-import { useAppDispatch, useAppSelector, setSocketConnected } from '@/store';
+import { useCallback } from 'react';
+import { getSocket } from '@/socket';
+import { useAppSelector } from '@/store';
 
+/**
+ * useSocket - READ-ONLY access to socket
+ * 
+ * Rules:
+ * - Does NOT connect/disconnect (SocketProvider handles that)
+ * - Provides socket instance via getSocket()
+ * - Provides connection state from Redux
+ * - Provides emit/on/off helpers
+ */
 export function useSocket() {
-    const dispatch = useAppDispatch();
-    const socketRef = useRef<Socket | null>(null);
-    const { token } = useAppSelector((state) => state.auth);
     const { isSocketConnected } = useAppSelector((state) => state.ui);
 
-    useEffect(() => {
-        if (token && !socketRef.current?.connected) {
-            socketRef.current = connectSocket(token);
-
-            socketRef.current.on('connect', () => {
-                dispatch(setSocketConnected(true));
-            });
-
-            socketRef.current.on('disconnect', () => {
-                dispatch(setSocketConnected(false));
-            });
-
-            socketRef.current.on('error', (error) => {
-                console.error('Socket error:', error);
-            });
+    const emit = useCallback(<T>(event: string, data?: T) => {
+        const socket = getSocket();
+        if (socket.connected) {
+            socket.emit(event, data);
+        } else {
+            console.warn('[useSocket] Cannot emit, socket not connected');
         }
-
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.off('connect');
-                socketRef.current.off('disconnect');
-                socketRef.current.off('error');
-            }
-        };
-    }, [token, dispatch]);
-
-    const disconnect = useCallback(() => {
-        disconnectSocket();
-        dispatch(setSocketConnected(false));
-    }, [dispatch]);
-
-    const emit = useCallback(<T>(event: string, data: T) => {
-        socketRef.current?.emit(event, data);
     }, []);
 
     const on = useCallback(<T>(event: string, callback: (data: T) => void) => {
-        socketRef.current?.on(event, callback);
+        const socket = getSocket();
+        socket.on(event, callback);
+        // Return cleanup function
         return () => {
-            socketRef.current?.off(event, callback);
+            socket.off(event, callback);
         };
     }, []);
 
-    const off = useCallback((event: string) => {
-        socketRef.current?.off(event);
+    const off = useCallback((event: string, callback?: (...args: unknown[]) => void) => {
+        const socket = getSocket();
+        if (callback) {
+            socket.off(event, callback);
+        } else {
+            socket.off(event);
+        }
     }, []);
 
     return {
-        socket: socketRef.current || getSocket(),
+        socket: getSocket(),
         isConnected: isSocketConnected,
         emit,
         on,
         off,
-        disconnect,
     };
 }

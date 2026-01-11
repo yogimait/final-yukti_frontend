@@ -6,6 +6,7 @@ interface BottomActionBarProps {
     onWhiteboardClick: () => void;
     onChatClick?: () => void;
     onHintsClick?: () => void;
+    unreadCount?: number;
     className?: string;
 }
 
@@ -17,11 +18,13 @@ interface BottomActionBarProps {
  * - Reappears on mouse move
  * - Button hover: scale 1.03
  * - No glow loops
+ * - Unread indicator on chat button
  */
 export function BottomActionBar({
     onWhiteboardClick,
     onChatClick,
     onHintsClick,
+    unreadCount = 0,
     className,
 }: BottomActionBarProps) {
     const [isFaded, setIsFaded] = useState(false);
@@ -102,11 +105,17 @@ export function BottomActionBar({
                     resetFadeTimer();
                     onChatClick?.();
                 }}
-                className="action-btn flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                className="action-btn relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary transition-colors"
                 aria-label="Open Chat"
             >
                 <MessageCircle className="h-4 w-4" />
                 <span className="hidden sm:inline">Chat</span>
+                {/* Unread indicator */}
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                )}
             </button>
 
             <div className="h-4 w-px bg-border" />

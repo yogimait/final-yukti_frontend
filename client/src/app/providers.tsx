@@ -2,6 +2,7 @@ import { type ReactNode, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { store, useAppSelector, useAppDispatch } from '@/store';
 import { getCurrentUser } from '@/store/auth.slice';
+import { SocketProvider } from '@/providers';
 
 interface ProvidersProps {
     children: ReactNode;
@@ -39,7 +40,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
 function InnerProviders({ children }: ProvidersProps) {
     return (
         <ThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+                <SocketProvider>{children}</SocketProvider>
+            </AuthProvider>
         </ThemeProvider>
     );
 }
@@ -52,3 +55,4 @@ export function Providers({ children }: ProvidersProps) {
         </Provider>
     );
 }
+

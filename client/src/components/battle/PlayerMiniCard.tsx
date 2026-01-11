@@ -1,9 +1,15 @@
 import { cn } from '@/lib/utils';
 import { User as UserIcon } from 'lucide-react';
-import type { User } from '@/types/user';
+
+// Minimal player type for display
+interface PlayerDisplay {
+    username: string;
+    elo?: number;
+    avatar?: string;
+}
 
 interface PlayerMiniCardProps {
-    player: User;
+    player: PlayerDisplay;
     isCurrentUser?: boolean;
     className?: string;
 }

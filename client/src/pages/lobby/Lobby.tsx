@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, Lock, Sparkles } from 'lucide-react';
@@ -10,10 +10,13 @@ import { GlobalNavigation } from '@/components/layout/GlobalNavigation';
 import { FilterBar } from '@/components/ui/AnimatedTabs';
 import { ArenaGrid, LiveActivityStrip, CreateArenaSheet } from '@/components/lobby';
 import type { ArenaRoom, ArenaFormData } from '@/components/lobby';
-import { useAuth } from '@/hooks';
+import { useAuth, useSocket } from '@/hooks';
+import { useAppDispatch, useAppSelector, addRoom, updateRoom, addActivityEvent, setRooms } from '@/store';
+import { SOCKET_EVENTS } from '@/types/socket';
+import type { RoomListPayload, RoomPlayerPayload } from '@/types/socket';
 
-// Mock rooms data with enhanced fields
-const publicRooms: ArenaRoom[] = [
+// Mock rooms data with enhanced fields (fallback when socket is not connected)
+const mockRooms: ArenaRoom[] = [
     { id: '1', name: 'Quick Battle', host: 'CodeMaster', players: 1, maxPlayers: 2, type: '1v1', status: 'open', difficulty: 'medium' },
     { id: '2', name: 'Algorithm Arena', host: 'AlgoKing', players: 4, maxPlayers: 5, type: 'squad', status: 'almost', difficulty: 'hard' },
     { id: '3', name: 'DSA Practice', host: 'ByteNinja', players: 1, maxPlayers: 2, type: '1v1', status: 'open', difficulty: 'easy' },
@@ -38,8 +41,14 @@ const roomELOs: Record<string, number> = {
 
 export function Lobby() {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const { user } = useAuth();
+    const { on, isConnected } = useSocket();
     const userELO = user?.elo || DEFAULT_ELO;
+
+    // Get rooms from Redux (or use mock data as fallback)
+    const lobbyRooms = useAppSelector((state) => state.lobby.rooms);
+    const activityEvents = useAppSelector((state) => state.lobby.activityEvents);
 
     // Filter states with defaults: Open + Near My ELO
     const [modeFilter, setModeFilter] = useState('all');
@@ -50,6 +59,68 @@ export function Lobby() {
     const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
     const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
     const [roomCode, setRoomCode] = useState('');
+
+    // Use Redux rooms if available, otherwise mock data
+    const publicRooms: ArenaRoom[] = lobbyRooms.length > 0
+        ? lobbyRooms.map(r => ({
+            id: r.id,
+            name: r.name,
+            host: r.host,
+            players: r.players,
+            maxPlayers: r.maxPlayers,
+            type: r.type,
+            status: r.status,
+            difficulty: r.difficulty,
+        }))
+        : mockRooms;
+
+    // Socket event listeners - Lobby ONLY listens, dispatches to Redux
+    useEffect(() => {
+        if (!isConnected) return;
+
+        // Listen for room list updates
+        const unsubRoomUpdate = on<RoomListPayload>(SOCKET_EVENTS.ROOM_UPDATE, (data) => {
+            dispatch(setRooms(data.rooms.map(r => ({
+                ...r,
+                difficulty: 'medium' as const, // Default difficulty
+            }))));
+        });
+
+        // Listen for player joined events
+        const unsubPlayerJoined = on<RoomPlayerPayload & { roomId: string; roomName: string }>(
+            SOCKET_EVENTS.ROOM_PLAYER_JOINED,
+            (data) => {
+                dispatch(addActivityEvent({
+                    message: `${data.username} joined ${data.roomName}`,
+                    type: 'join',
+                }));
+                // Update room player count
+                dispatch(updateRoom({
+                    id: data.roomId,
+                    players: data.elo, // This should be the updated player count from backend
+                }));
+            }
+        );
+
+        // Listen for room created events
+        const unsubRoomCreate = on<{ room: ArenaRoom }>(SOCKET_EVENTS.ROOM_CREATE, (data) => {
+            dispatch(addRoom({
+                ...data.room,
+                difficulty: data.room.difficulty || 'medium',
+            }));
+            dispatch(addActivityEvent({
+                message: `New room created: ${data.room.name}`,
+                type: 'create',
+            }));
+        });
+
+        // Cleanup listeners on unmount
+        return () => {
+            unsubRoomUpdate();
+            unsubPlayerJoined();
+            unsubRoomCreate();
+        };
+    }, [isConnected, on, dispatch]);
 
     // Filter rooms based on all criteria
     const filteredRooms = useMemo(() => {
@@ -68,7 +139,7 @@ export function Lobby() {
 
             return true;
         });
-    }, [modeFilter, statusFilter, skillFilter]);
+    }, [publicRooms, modeFilter, statusFilter, skillFilter, userELO]);
 
     const handleResetFilters = () => {
         setModeFilter('all');
@@ -82,8 +153,13 @@ export function Lobby() {
 
     const handleCreateArena = (data: ArenaFormData) => {
         console.log('Creating arena:', data);
-        // In real app, this would create the room via API
-        navigate('/room/new-room-id');
+        // Generate random 6-char room code
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let roomCode = '';
+        for (let i = 0; i < 6; i++) {
+            roomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        navigate(`/room/${roomCode}`);
     };
 
     return (
@@ -146,7 +222,10 @@ export function Lobby() {
                     transition={{ duration: 0.4, delay: 0.1 }}
                     className="mb-6"
                 >
-                    <LiveActivityStrip />
+                    {/* LiveActivityStrip reads from Redux via props */}
+                    <LiveActivityStrip
+                        events={activityEvents.length > 0 ? activityEvents : undefined}
+                    />
                 </motion.div>
 
                 {/* ===== SECTION 2: SMART FILTERS BAR ===== */}
