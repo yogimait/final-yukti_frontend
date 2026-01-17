@@ -4,14 +4,15 @@ import type { IProblem } from "../interfaces/Iproblem.js";
 const testCaseSchema = new Schema({
   input: { type: String, required: true },
   output: { type: String, required: true }
-}, { _id: false }); // Test cases ko alag ID ki zarurat nahi hai
+}, { _id: false }); 
 
 const problemSchema: Schema<IProblem> = new Schema(
   {
     title: { 
       type: String, 
       required: true,
-      trim: true
+      trim: true,
+      unique: true // 👈 Added unique to prevent duplicate problems
     },
     description: { 
       type: String, 
@@ -21,8 +22,20 @@ const problemSchema: Schema<IProblem> = new Schema(
       type: String, 
       enum: ['Easy', 'Medium', 'Hard'], 
       default: 'Easy',
-      index: true // Helps in filtering problems efficiently
+      index: true 
     },
+    // 👇 Topics Array added here
+    topics: {
+      type: [String],
+      default: [],
+      index: true 
+    },
+    // 👇 Extra UI fields
+    inputFormat: { type: String, default: "Standard Input" },
+    outputFormat: { type: String, default: "Standard Output" },
+    sampleInput: { type: String, default: "" },
+    sampleOutput: { type: String, default: "" },
+    
     starterCode: {
       cpp: { type: String, default: '' },
       java: { type: String, default: '' },
