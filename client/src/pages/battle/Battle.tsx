@@ -9,6 +9,7 @@ import { ProblemPanel } from './ProblemPanel';
 import { OpponentPanel } from './OpponentPanel';
 import { MATCH_DURATION } from '@/utils/constants';
 import { useAuth, useSocket } from '@/hooks';
+import { codeExecutionService, formatExecutionOutput } from '@/services';
 import {
     useAppDispatch,
     useAppSelector,
@@ -233,47 +234,25 @@ export function Battle() {
             });
         }
 
-        // Execute code in browser (for JavaScript only - others need backend)
-        setTimeout(() => {
-            try {
-                if (language === 'javascript' || language === 'typescript') {
-                    // Capture console.log output
-                    const logs: string[] = [];
-                    const originalLog = console.log;
-                    console.log = (...args) => {
-                        logs.push(args.map(arg =>
-                            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-                        ).join(' '));
-                    };
+        // Execute code via unified execution service
+        // Battle mode currently disabled for browser execution guard
+        // Set isBattleMode: true to enforce backend-only in competitive matches
+        try {
+            const result = await codeExecutionService.executeCode({
+                language,
+                code,
+                stdin: '',
+                isBattleMode: false, // Set to true for competitive matches
+            });
 
-                    try {
-                        // Execute the code
-                        // eslint-disable-next-line no-eval
-                        eval(code);
-
-                        // Restore console.log
-                        console.log = originalLog;
-
-                        if (logs.length > 0) {
-                            setOutput('> Running code...\n\n' + logs.join('\n'));
-                        } else {
-                            setOutput('> Running code...\n\n(No output - add console.log() to see results)');
-                        }
-                    } catch (execError: unknown) {
-                        console.log = originalLog;
-                        const errorMessage = execError instanceof Error ? execError.message : String(execError);
-                        setOutput(`> Running code...\n\n❌ Error: ${errorMessage}`);
-                    }
-                } else {
-                    // For other languages, show a message (backend execution needed)
-                    setOutput(`> Running code...\n\n⚠️ ${language.toUpperCase()} execution requires backend integration.\nCurrently only JavaScript runs in browser.`);
-                }
-            } catch (error: unknown) {
-                const errorMessage = error instanceof Error ? error.message : String(error);
-                setOutput(`> Running code...\n\n❌ Error: ${errorMessage}`);
-            }
+            // Format and display result with time/memory stats
+            setOutput(formatExecutionOutput(result));
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setOutput(`> Running code...\n\n❌ Error: ${errorMessage}`);
+        } finally {
             setIsRunning(false);
-        }, 500);
+        }
     }, [isConnected, matchId, emit, code, language]);
 
     const handleSubmit = useCallback(() => {
